@@ -1,0 +1,384 @@
+
+<meta charset="utf-8" emacsmode="-*- markdown -*-">
+**IoT Chess - Team 71**
+
+Game Demo
+===============================================================================
+
+![Our Final Project Video](https://youtu.be/ETjdfLJ3dIw)
+
+Overview
+===============================================================================
+
+For our 6.08 Final Project, we have built an ESP32-based chess game that is perfect for playing when social distancing, especially if you have a wonderful ESP32 that you want to incorporate into your day-to-day activities. You’ve probably been frustrated with how hard it has been to meet up with friends for a friendly game of chess (we know we have). With our IoT Chess, you need look no further than your Arduino board and web browser.
+
+The game consists of two main parts: a handheld device with UI and a clean browser rendering. Each player is able to see the current games’ state in real time and decide their next move against their opponent. Additionally, there are two choices for how you would like to play: tilt functionality and speech recognition. You want to play chess but you also want to limit your movement to a button-press? Look no further.
+
+The technical rules of our game are the same as traditional chess. An outline of such protocol can be found [here.](https://www.chesscoachonline.com/chess-articles/chess-rules) Our server side python scripts are programmed to analyze the validity of every attempted move, and to prompt the user to re-select a mqove if it is invalid.
+
+To avoid all the checks necessary to find a checkmate, we consider a player to be the winner when they have captured the King of their competitor. We know that you’ve always wanted to have the satisfaction of actually capturing the King, and we sure delivered. Our Python scripts evaluate the game state upon each move, and if a winner is detected, game play is terminated and the winner is announced on both interfaces for each player. 
+
+In a different scenario, let’s assume that you’re tired of playing (chess can get very heated and requires a lot of mental energy), but you don’t want to simply abandon your partner! In this case, we’ve also implemented a resign functionality that will allow you to signal to your partner that you’ve decided to stop playing.
+
+
+Game Functionality
+===============================================================================
+
+User Pairing
+-------------------------------------------------------------------------------
+User pairing is done through a variety of POST requests, GET requests, and database usage. Once a user decides they would like to participate in a round of our IoT Chess, their username is sent into a Waiting Room (techincally, this "Waiting Room" is the user_log database). Once the ESP32 detects two unique users in the Waiting Room, players recieve a message on their ESP32 that they have been matched. We did write in one condition though: the Server only checks for usernames within the database that have been entired within a certain time threshold. This prevents a user from hypothetically being paired with a ghosted partner (that would be very tragic for them).
+
+Upon pairing, the Waiting Room is cleared and the active players database is populated by a GET request from each ESP32. Through a series of if-statements and checks, we ensure that only one Game ID is saved to represent any active round. In this active database, each player's username is stored with either an 'A' or 'B' tag, as well as the corresponding game ID. This information is heavily called upon later in the code, when checking game state as well as whose turn. For our game, we have designed it so that whoever begins searching for a partner first is automatically assigned as Player A. 
+
+The ESP's GET request returns a string that takes the form: "GAME ID, PLAYER A, PLAYER B." The ESP can then splice this information to fetch and store locally each temporary ID and user tag. These are used for display and informational purposes throughout the entirety of our state machine and functionality.
+
+
+Looking at the home screen of our game, the user short presses the game to enter the “waiting room”. While another person hasn’t joined, the screen displays “searching for opponent”. Once an opponent is found, the screen will display the two players matched. 
+
+![Two players being matched](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/screentrio.jpeg width=400px)
+
+At this point, the browser will be initialized to the beginning of a chess game, and the left side of the browser will display the two players along with whose turn it is.
+
+The browser can be viewed at this link: http://608dev-2.net/sandbox/sc/team71/final_project_1/Server/board.py
+
+![browser after initialization](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/browserrendering.jpeg width=400px)
+
+The first person to join the game will control the white game pieces (player A) and the second person will control the black game pieces (player B). 
+
+Making a Move
+-------------------------------------------------------------------------------
+
+The player whose turn it is will be prompted to make a move one of two ways: they can short press left to use the voice recognition feature, or short press right to use the tilting feature.
+
+![Selection page](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/selectionpage.jpeg width=200px)
+
+    * Select by Tilt
+        * You tilt left/right to select a column (A-H) (short press to confirm)
+        * You tilt left/right to select a row (1-8) (short press to confirm)
+        * Long press to confirm the square
+        * Repeat for destination
+    * Select by Voice Recognition
+        * short press to begin recording (records for 3 seconds after press)
+        * use the phonetic alphabet! for example, "Bravo 8" or "Golf 3"
+        * It takes ~5-10 seconds for the audio data to be encoded, sent, received, and parsed so be patient!
+        * If you open up the serial monitor you can see more updates
+        * Eventually, you will get a message showing the space. Because there is much more room for error with voice recognition, there is the option to rerecord by pressing left. If the space shown on the screen is accurate, then you can right press to go on.
+        * This process will be done twice- once for the origin, once for the destination
+
+Opponent's Turn
+-------------------------------------------------------------------------------
+While it is your opponent's turn, the screen will indicate so. Be patient, once it prompts you to make a move again, do so!
+
+Resignation
+-------------------------------------------------------------------------------
+If you want to forfeit the game, you can resign. When it is your turn to make a move, instead of pressing left for speech or right for tilt, press both, and the game will end.
+
+Game Over
+-------------------------------------------------------------------------------
+You win by capturing the King of the other player. Once a king is captured, the ESP will display a message as well as the browser. No matter the result, if you want to play again, just short press the right button, and you will be taken back to the original home screen! From here you can search for a partner, and repeat the process all over again!
+ 
+Implementation
+===============================================================================
+
+User Pairing
+-------------------------------------------------------------------------------
+
+User pairing is done through a variety of POST requests, GET requests, and database usage. Once a user decides they would like to participate in a round of our IoT Chess, their username is sent into a Waiting Room (technically, this "Waiting Room" is the user_log database). Once the ESP32 detects two unique users in the Waiting Room, players receive a message on their ESP32 that they have been matched. We did write in one condition though: the Server only checks for usernames within the database that have been entered within a certain time threshold. This prevents a user from hypothetically being paired with a ghosted partner (that would be very tragic for them).
+ 
+![Game Initialization Renderings](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/screentrio.jpeg width=400px)
+
+ 
+Upon pairing, the Waiting Room is cleared and the active players database is populated by a GET request from each ESP32. Through a series of if-statements and checks, we ensure that only one Game ID is saved to represent any active round. In this active database, each player's username is stored with either an 'A' or 'B' tag, as well as the corresponding game ID. This information is heavily called upon later in the code, when checking game state as well as whose turn. For our game, we have designed it so that whoever begins searching for a partner first is automatically assigned as Player A.
+ 
+The ESP's GET request returns a string that takes the form: "GAME ID, PLAYER A, PLAYER B." The ESP can then splice this information to fetch and store locally each temporary ID and user tag. These are used for display and informational purposes throughout the entirety of our state machine and functionality.
+
+
+Board Initialization (Browser)
+-------------------------------------------------------------------------------
+After two users get paired, the game is said to have been initialized. In the gameplay.py file, the default positions of each piece is entered into a database with the game ID corresponding to the players who were just matched. From there, a user can enter the URL corresponding to the board.py script into a browser of their choice, and the default board along with the two player assignments (player A, player B), and whose turn it is will show up on the screen. This method of displaying the board is done by importing an HTML file into the Python script, and returning from there. 
+
+On the backend, the HTML file calls a JavaScript file that contains various HTTP requests to a script called browser_init.py, which is the script that extracts all relevant data from the main database. First, the script will pull the entry (there should only be one!) from the player_assignment table in the database. It will then use the game ID associated with that entry to extract positions of the pieces from table_data (which have been entered into their default positions). This script also regularly checks to see who’s turn it is, who the winner is (if any), and who resigned (if anyone has) through similar mechanisms, and sends it to the JavaScript file in JSON form. 
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Python
+if request["values"]["info"] == "board":
+           return json.dumps(piece_dict) # return JSON key-value pairs
+       elif request["values"]["info"] == "players":
+           return json.dumps(player_dict)
+       elif request["values"]["info"] == "winner":
+           return json.dumps(winner_dict)
+       elif request["values"]["info"] == "turn":
+           return json.dumps(turn_dict)
+       elif request["values"]["info"] == "resign":
+           return json.dumps(resign_dict)
+       elif request["values"]["info"] == "leaderboard":
+           return json.dumps(leader_dict)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Once the JavaScript file receives all of the relevant info, it populates the board with the updated piece locations via ID attributes on the tags representing each tile. It will also occasionally make style changes depending on the state of the game (if someone won or resigned). 
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ JavaScript
+json = JSON.parse(Http.responseText);
+var boardTiles = Object.keys(json);
+var boardValues = Object.values(json);
+ 
+var j;
+for (j = 0, j < boardIds.length, j++) {
+   document.getElementById(boardIds[j]).innerHTML = '';
+}
+ 
+var i;
+for (i = 0; i < boardTiles.length; i++) {
+   document.getElementById(boardTiles[i]).innerHTML = boardValues[i];
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The JavaScript file will call the Python script automatically every 3 seconds after initialization, so information updates in realtime without the user having to refresh the page or do a manual request. 
+
+
+Just as an active game is initialized through a GET request to the active player database, the end of a game also concludes with a POST request to this same database. Upon recieving a POST request, the active_player script's request handler clears the data -- in turn, leaving it primed and ready for the next round... exciting stuff.
+
+
+Board Initialization (ESP)
+-------------------------------------------------------------------------------
+
+In order to create a board rendering on our ESP32s, we indexed through the pixels on our enlarged screen and drew shapes/lines using Arduino functionality. We created a Board Class that was incorporated into our ESP32 Code. In this Class, a board object is initialized with functions draw_blank_board() and fill_pieces(char* row_string). In order to make the basic checker board, we have a double nested for loop that alternates between fillRect black and white. 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void draw_blank_board() {
+    for (int c = 0; c *less than* 8; c++) {
+      for (int r = 0; r *less than* 8; r++) {
+        // check for white or black
+        if ((r + c) % 2 == 1) {
+          // x, y, w, h, color
+          tft.fillRect(x + (r * 20), y + (c * 20), 20, 20, TFT_WHITE);
+        } else {
+          tft.fillRect(x + (r * 20), y + (c * 20), 20, 20, TFT_BLACK);
+        }
+      }
+    }
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+We also utilize the game ID at this step to call upon splice_ascii.py; this method indicates where each piece is at any given point in time (assuming a game is in play). Splice_ascii returns a 64 character string of either underscores or lettering, indicating if a piece is in a box and, if so, whose it is and which pawn it is. For each corresponding piece (bishop, king, queen, rook, etc.), we then used variations on fillEllipse, fillRect, and drawLine to make icons that were somewhat (somewhat is used very loosely here) resemblant of the actual chess pieces. An example can be seen below.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+} else if (strstr(space, "Q")){
+    tft.fillRect(x+(r*20)+6, y+(c*20)+8, 8, 7, TFT_BLUE);
+    tft.fillEllipse(x+(r*20)+5, y+(c*20)+8, 2, 2, TFT_BLUE);
+    tft.fillEllipse(x+(r*20)+15, y+(c*20)+8, 2, 2, TFT_BLUE);
+    tft.fillEllipse(x+(r*20)+10, y+(c*20)+6, 2, 2, TFT_BLUE);
+  }
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Making these drawings was a lot of trial and error to see what shapes, widths, heights, and x/y starting values worked. We like to think that their abstractness adds to the quirkiness of our game :) The board class is called upon so that the player at any given state (either during their turn or waiting for opponent), can see the current status of every pawn both on the ESP32 and the browser.
+
+
+Gameplay
+-------------------------------------------------------------------------------
+
+### Moving Pieces
+
+At the beginning of each round, the user begins in a state called ASCII_VISUAL. This state displays a miniature version of the chess board on the ESP. The user can look at the board on the ESP or the board on the browser (board.py). From here, they can press the left button to use the voice recognition (state SPEAK) or press right to use the tilting functionality (state TILT) to select the origin and destination of the move they want to make.
+
+For both the speak and tilt functionality we implemented classes MoveWithSpeech and MoveSelector, respectively, which both include an update function that controls the state machine for piece selection. The update function corresponding to the correct class is called in the corresponding state (i.e. state SPEAK calls the MoveWithSpeech update function). 
+
+![Selection page](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/statemachine.jpeg width=500px)
+
+Both state machines for MoveWithSpeech and MoveSelector are shown above. 
+
+The state machine for MoveWithSpeech essentially has the user speak a chess space using the phonetic alphabet. Once the chess space is detected and parsed, the user has the option to short press the left button to re-record or short press the right button to confirm the space. This process is used twice in the actual state machine, once to choose the origin, and another time for the destination. 
+
+To expand more on the content in MoveWithSpeech, the states “recording” the move are extremely similar to the speech API lab we did in class, the main work that was done on our part was the parsing of the phonetic alphabet. To briefly describe what was done, I split the response into words (using strtok with spaces). From this list, I go through each word and remove all non alphanumeric characters (the response includes quotation marks). At this point, we would expect our list to look like [‘Charlie’, ‘7’] for the space C7. I then take the first letter from the first word and the entirety of the second word as my chess piece. The reason for this is because occasionally, certain numbers get recognized incorrectly. For example, sometimes ‘1’ comes back as ‘one’, so we have to include the whole word, and have the server detect for edge cases such as this one. Aside from this, with proper enunciation the voice recognition works almost perfectly. 
+
+The state machine for MoveSelector has states to choose the column (a letter), then to choose the row (a number). After choosing both the column and row, the user long presses to confirm the piece. Again, this process is used twice in the state machine, once to choose the origin, and another time for the destination. 
+
+There is also a global indicator variable supporting the transition between these two sub-state machines and the main state machine. Once we reach the last state of the state machine a global boolean send_val is set to true. In our main state machine, when we see that send_val is true, we know that the origin and destination values have been populated to the correct values and we can move on to state CHECK VALIDITY.
+
+### Checking Validity
+
+One unique feature about chess is that each piece has its own particular rules for movement. For example, bishops can only move diagonally, while rooks are given the ability to move horizontally and vertically. Thus, the crucial challenge was to determine which piece was being moved so that we could assess the move’s validity. 
+
+After a user submits their move either using the speech or tilt functionality, it is sent to gameplay.py via a POST request from the ESP. From there, the game ID, player, origin tile, and destination tile are extracted from the body of the request. In order to determine what piece the player was attempting to move, the script extracts all entries into the database that matches the game ID (there should only be one) and finds the index of the tile that was designated as the “origin tile”. Then, the particular piece is identified using that index and a list that represents all column names. If there is no piece matching the designated origin tile, or if that piece is the opponent’s piece, then the value False is returned. If not, it continues through the validity check.
+
+The next step is to extract just the piece name. Each piece is encoded with information representing which player the piece belongs to and which copy of the piece it is. For example, player A’s right bishop is “bishop_2a”. Since we want all bishops to be treated the same, we drop the last 3 characters of each piece to get the general name of the piece (“queen”, “king”, “pawn”, etc). From there, we lookup the appropriate function to use in func_dict, a dictionary that maps these names to their respective functions. All of the functions take in the origin row and column, the destination row and column, the locations of all pieces extracted from the database, the game ID, and the player. Each function returns True if the move is valid, and False if the move is invalid.
+
+If the move is valid, then a few things will be changed. First of all, if there is a piece in the destination, it will be set to -1 (it has been taken) and will no longer display on the board. Second, we change the value in the column associated with the piece. For example, if we move a pawn up 2 spaces from B2 to B4, the pawn_2a value will be changed from B2 to B4. Finally, we have to indicate that the player’s turn has changed. We have a table called player_turn which has a column current_turn showing either ‘A’ or ‘B’ to represent a person’s turn. 
+
+### Special Moves
+
+**Castling**
+
+To achieve this, I added a case to the king function such that if the king has moved more than one tile, we can check to see if the player is attempting to castle. In order to castle, the king must move 2 spaces horizontally in either direction. Once we register that is has moved in this specific way, the script calls a new function designed to check the validity of a castling attempt.
+
+This took multiple parts to implement. Firstly, I added a table to the database that would keep track of which rooks and kings had already moved. This is because in order to castle with a rook, neither the rook nor the king is allowed to have moved prior to the castling attempt. Thus, the new table tracks each rook and each king.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Python
+c.execute(f"""CREATE TABLE IF NOT EXISTS castle_data (game_id int, rook_1a int, rook_2a int, king_1a int,
+       rook_1b int, rook_2b int, king_1b int);""")
+c.execute(f"""INSERT into castle_data VALUES ({game_id}, 0, 0, 0, 0, 0, 0);""")
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Then in the castle function, the script identifies which of the 2 kings is being moved and which of the 4 rooks is being castled with, and checks the database to see if those pieces have been moved.
+
+If it passes this check, the next thing to do is check to see if there is any interference between the rook's position and the tile it is going to move to. This is done with the already existing "check_interference" function. From there, the rook's new position is manually logged into the database, and the castle function returns True to the parent King function, which will then update the king's position as well.
+
+**En passant**
+
+In order to implement this rule, I used a similar strategy by adding another case to the Pawn function, which is called if the pawn moves up diagonally but there is no piece in the destination tile. This is a potential for en passant.
+
+For this special move, I also had to create another table in the database called "last_move", as the en passant move is specific to pawns and the move option only lasts for one turn. Thus, the table logs the last piece that was moved, as well as the origin and destination tiles, so that we can tell if an en passant attempt is valid. Within the specific case in the Pawn function, the function "En_passant" is called. From there, the function grabs the entry (there should only
+be one) in the last_move table and first checks to see if it is a pawn. If it is a pawn, the following checks are done:
+
+    * Is the pawn that was just moved on the opposing side?
+    * Did the pawn that was just moved move 2 tiles?
+    * Did the player's pawn that attempted to move in a position to take the opposing pawn had the opposing pawn only moved one tiles?
+
+If the attempted move passes all of these checks, the function manually logs that the opposing pawn has been "taken" in the "data_table" table, and returns True to signal that this is a valid move.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Python
+with sqlite3.connect(database) as c:
+   c.execute(f"""UPDATE table_data SET {piece} = '-1'
+             dWHERE game_id = {game_id};""")
+return True
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Pawn Promotion**
+
+Pawn promotion was a slightly different process, as the piece is not given a new functionality, but is simply considered a different piece. Thus, the way to implement this move was to keep track of which pawns have been "promoted." This is done using another table that contains all of the 8 pawns along with the game ID. In the main script that checks validity, there is a check to see if the piece being moved was a pawn and if it has reached the end of the board (Row 8 for player A, Row 1 for player B). If it has, the pawn is marked as promoted in the pawn database. Additionally, there is a process in the checking validity function to extract all promoted pawns and send them to the queen function rather than the pawn function.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Python
+# SPECIAL CASE: player is moving a promoted pawn
+pawn_list = [piece for piece in pieces if piece[:-3] == 'pawn']
+with sqlite3.connect(database) as c:
+   pawns = c.execute(f"""SELECT * from pawn_table
+                     WHERE game_id = {game_id};""").fetchall()
+
+for i, pawn_val in enumerate(pawns):
+   if pawn_val == 1 and pawn_list[i-1] == piece:
+       piece_func = func_dict['queen']
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The last thing that needed to be changed was the display on the browser and ESP. I implemented this for the browser by doing a similar process of extracting promoted pawns and changing their name so they would be mapped to the queen unicode character rather than the pawn one.
+
+### Opponent's Turn
+
+We briefly mentioned at the end of the Checking Validity section that there is a table containing the current turn. During the opponent’s turn, the ESP repeatedly sends GET requests to the url ending in gamestate.py. This script returns either ‘A’, ‘B’, or the game outcome if the game is over. We remain in the “opponent’s turn” state until this get request returns the player that we are. 
+
+### Winning
+
+Each time gamestate.py is called, it calls upon a supporting function called check_game_state. The way the check_game_state function works is it grabs the row from table_data with this game_id and checks the columns for the kings- if king_1a has been taken (has a value of ‘-1’), then this function should return “you won!” if you are player B, “you lost” if you are player A. Vice versa if king_1b was taken. Else, it returns “ongoing” to indicate that the game isn’t over. If check_game_state returns ongoing, the main request handler would return the turn of the current player’s turn.
+
+The browser also access this database during each reloading of the page, meaning the browser will also update with information about the winner.
+
+### Resignation
+
+Another game ending feature that we implemented was the option for a user to forfeit/resign at any point. During your turn, the screen gives you three options: press left to speak, right to tilt, or both to resign.
+If both buttons are pressed:
+
+    * set both the origin and destination values (usually a chess space) to '99'
+    * set the state equal to CHECK_VALIDITY so that the values would be sent in a post request to the server just like any other move.
+
+On the server side, I added a column to the table player_turn that holds the game_id and the player whose turn it is. The new column is called resigned, and will usually equal “None”.
+
+If the server receives a request with player=A, game_id=123456, origin=99, destination=99, then it would set the value of resigned to 'A' in the row with the correct game_id.
+
+In addition, when the request receives '99' as the values for both the origin and destination, it will short circuit the function and return 'true' (indicating a valid move) before attempting to check if the move is valid or not.
+
+
+Documentation
+===============================================================================
+
+Block Diagram
+-------------------------------------------------------------------------------
+
+![Block Diagram](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/blockdiagram.jpeg width=500px)
+
+
+State Machine Diagram
+-------------------------------------------------------------------------------
+
+Below you can see the main state machine, followed by the state machines for the selecting 
+
+![Main State Machine](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/statemachine2.jpeg width=400px)
+
+![State Machine For Selecting](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/statemachine.jpeg width=500px)
+
+Implementing New Board
+-------------------------------------------------------------------------------
+
+Here is a schematic for how we wired up the larger board so that you can see your game of chess in clearer detail!
+
+![Wiring Schematic](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/schematic.jpeg width=500px)
+
+
+Challenges
+===============================================================================
+
+One larger challenge we faced in the first two weeks was setting players to A and B. Because each person is running the same ESP code, we couldn't have much that was hardcoded (it would vary too much person to person). We needed to make sure that the state machine was able to accomodate two players running through it at once. At first, we made a singular user database that was cleared when a pairing was detected. Inevitably, however, one ESP's GET request would make contact with the database first, and in turn, block the other from ever registering that a pairing was found in the first place. To overcome issues along these lines, we added additional states to our state machine (for example, the state CHECK_PLAYER_ASSIGNMENT) and tables to our database. This safety net ensured that absolutely no information was getting lost in translation.
+
+Another challenge we faced was figuring out how to best render the game on the ESP32. Our first MVP was just a string formatted to the screen, but it was clear that wouldn't cut it. Ideally, we envisioned unicode renderings on both screens. However, research showed that getting unicode on an LCD is a lot harder than anticipated. We ended up hard coding visualization drawings for each piece, and manually setting cursor locations for each piece. This took a lot of trial and error, but it was definitely worth it. Please take this into consideration, though, when you look at our ESP chess pieces... we would like to think that we took ~artistic liberty~ (keep the Knight).
+
+In addition, we ran into problems with the accuracy of the Google Speech API response when just using letters. Specifically, during testing, we found that the letters 'B', 'C', 'D', 'E', would often get confused. As a result, we realized that we would get much higher accuracy from using the phonetic alphabet. Its not ideal to have to say "Echo 2" instead of "E2", but it results in a pretty accurate outcome. 
+
+
+Parts List
+===============================================================================
+We only used one additional part: a larger display to allow for more detail on the ESP visualizer.
+Larger LCD Screen: ILI9341
+
+Milestones Clustered by Functionality
+===============================================================================
+
+Browser Rendering
+-------------------------------------------------------------------------------
+
+[Board Connected to Python Script via GET request](https://youtu.be/PGe4pDOFxf8)
+
+[Improve Browser Version of Board](https://youtu.be/0IW2X7hjCQg)
+
+[Browser with all Info](https://youtu.be/GopLLjrLdk0)
+
+[Adding Leaderboard](https://youtu.be/9eWwH9Ew0UE)
+
+Pairing Users
+-------------------------------------------------------------------------------
+[Game Initialization and Pairing](https://youtu.be/8Y_qr4dH9NU)
+
+[Player A/B Assignment](https://youtu.be/u8M_azWGhvE)
+
+
+Tilt Functionality
+-------------------------------------------------------------------------------
+
+Speech Functionality
+-------------------------------------------------------------------------------
+[Preliminary Speech Testing](https://www.youtube.com/watch?v=AUx4ta3avjY)
+
+[Phonetic Alphabet Change](https://www.youtube.com/watch?v=Oh1yBa7QlHQ)
+
+[Speech Complete- 0:20 to 0:52 in video](https://www.youtube.com/watch?v=GopLLjrLdk0)
+
+[Final Debug](https://www.youtube.com/watch?v=tjEw0IIw43M)
+
+
+Gameplay
+-------------------------------------------------------------------------------
+[Game Setup and Game Over Check](https://www.youtube.com/watch?v=n5P3I4PMN6c)
+
+[Hardcode Chess Rules](https://youtu.be/0IW2X7hjCQg)
+
+[Special Rules](https://youtu.be/9eWwH9Ew0UE)
+
+[Preliminary ESP Server Connection](https://www.youtube.com/watch?v=yRVl-ibA524)
+
+[Resignation](https://www.youtube.com/watch?v=ek4x9gCcN1Y)
+
+[Immediate Browser Display](https://www.youtube.com/watch?v=MRK_ew69Emk)
+
+
+
+Team Members
+===============================================================================
+
+* Nina Wang
+* Jasmine Wu
+* Anna Meurer
+* Nick Gustafson
+
+
+<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
