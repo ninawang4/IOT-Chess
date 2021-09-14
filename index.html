@@ -35,13 +35,13 @@ The ESP's GET request returns a string that takes the form: "GAME ID, PLAYER A, 
 
 Looking at the home screen of our game, the user short presses the game to enter the “waiting room”. While another person hasn’t joined, the screen displays “searching for opponent”. Once an opponent is found, the screen will display the two players matched. 
 
-![Two players being matched](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/screentrio.jpeg width=400px)
+![Two players being matched](screentrio.jpeg width=400px)
 
 At this point, the browser will be initialized to the beginning of a chess game, and the left side of the browser will display the two players along with whose turn it is.
 
 The browser can be viewed at this link: http://608dev-2.net/sandbox/sc/team71/final_project_1/Server/board.py
 
-![browser after initialization](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/browserrendering.jpeg width=400px)
+![browser after initialization](browserrendering.jpeg width=400px)
 
 The first person to join the game will control the white game pieces (player A) and the second person will control the black game pieces (player B). 
 
@@ -50,7 +50,7 @@ Making a Move
 
 The player whose turn it is will be prompted to make a move one of two ways: they can short press left to use the voice recognition feature, or short press right to use the tilting feature.
 
-![Selection page](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/selectionpage.jpeg width=200px)
+![Selection page](selectionpage.jpeg width=200px)
 
     * Select by Tilt
         * You tilt left/right to select a column (A-H) (short press to confirm)
@@ -85,7 +85,7 @@ User Pairing
 
 User pairing is done through a variety of POST requests, GET requests, and database usage. Once a user decides they would like to participate in a round of our IoT Chess, their username is sent into a Waiting Room (technically, this "Waiting Room" is the user_log database). Once the ESP32 detects two unique users in the Waiting Room, players receive a message on their ESP32 that they have been matched. We did write in one condition though: the Server only checks for usernames within the database that have been entered within a certain time threshold. This prevents a user from hypothetically being paired with a ghosted partner (that would be very tragic for them).
  
-![Game Initialization Renderings](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/screentrio.jpeg width=400px)
+![Game Initialization Renderings](screentrio.jpeg width=400px)
 
  
 Upon pairing, the Waiting Room is cleared and the active players database is populated by a GET request from each ESP32. Through a series of if-statements and checks, we ensure that only one Game ID is saved to represent any active round. In this active database, each player's username is stored with either an 'A' or 'B' tag, as well as the corresponding game ID. This information is heavily called upon later in the code, when checking game state as well as whose turn. For our game, we have designed it so that whoever begins searching for a partner first is automatically assigned as Player A.
@@ -177,7 +177,7 @@ At the beginning of each round, the user begins in a state called ASCII_VISUAL. 
 
 For both the speak and tilt functionality we implemented classes MoveWithSpeech and MoveSelector, respectively, which both include an update function that controls the state machine for piece selection. The update function corresponding to the correct class is called in the corresponding state (i.e. state SPEAK calls the MoveWithSpeech update function). 
 
-![Selection page](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/statemachine.jpeg width=500px)
+![Selection page](statemachine.jpeg width=500px)
 
 Both state machines for MoveWithSpeech and MoveSelector are shown above. 
 
@@ -286,7 +286,7 @@ Documentation
 Block Diagram
 -------------------------------------------------------------------------------
 
-![Block Diagram](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/blockdiagram.jpeg width=500px)
+![Block Diagram](blockdiagram.jpeg)
 
 
 State Machine Diagram
@@ -294,16 +294,16 @@ State Machine Diagram
 
 Below you can see the main state machine, followed by the state machines for the selecting 
 
-![Main State Machine](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/statemachine2.jpeg width=400px)
+![Main State Machine](statemachine2.jpeg width=400px)
 
-![State Machine For Selecting](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/statemachine.jpeg width=500px)
+![State Machine For Selecting](statemachine.jpeg width=500px)
 
 Implementing New Board
 -------------------------------------------------------------------------------
 
 Here is a schematic for how we wired up the larger board so that you can see your game of chess in clearer detail!
 
-![Wiring Schematic](http://608dev-2.net/sandbox/sc/team71/final_project_1/Writeups/schematic.jpeg width=500px)
+![Wiring Schematic](schematic.jpeg width=500px)
 
 
 Challenges
